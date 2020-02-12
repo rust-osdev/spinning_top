@@ -2,6 +2,8 @@
 
 <img align="right" src="img/top.png" width=100px>
 
+[![Docs.rs Badge](https://docs.rs/spinning_top/badge.svg)](https://docs.rs/spinning_top/)
+
 A simple spinlock crate based on the abstractions provided by [`lock_api`].
 
 [`lock_api`]: https://docs.rs/lock_api/
