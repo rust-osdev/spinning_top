@@ -36,6 +36,24 @@ fn make_uppercase(spinlock: &Spinlock<String>) {
 }
 ```
 
+## The `nightly` Feature
+
+On Rust nightly, the `nightly` feature of this crate can be enabled to 
+make the `new` function a `const` function. This makes the `Spinlock` type
+usable in statics:
+
+```rust
+use spinning_top::Spinlock;
+
+static DATA: Spinlock<u32> = Spinlock::new(0);
+
+fn main() {
+    let mut data = DATA.lock();
+    *data += 1;
+    assert_eq!(*data, 1);
+}
+```
+
 ## License
 
 Licensed under either of
