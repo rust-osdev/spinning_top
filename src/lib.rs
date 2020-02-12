@@ -1,17 +1,17 @@
 //! Provides a simple spinlock based on the abstractions provided by the [`lock_api`] crate.
-//! 
+//!
 //! [`lock_api`]: https://docs.rs/lock_api/
-//! 
+//!
 //! ## Usage Example
-//! 
+//!
 //! ```rust
 //! use spinning_top::Spinlock;
-//! 
+//!
 //! fn main() {
 //!     let data = String::from("Hello");
 //!     // Wrap some data in a spinlock
 //!     let spinlock = Spinlock::new(data);
-//! 
+//!
 //!     // Lock the spinlock to get a mutex guard for the data
 //!     let mut locked_data = spinlock.lock();
 //!     // The guard implements the `Deref` trait, so we can use it like a `&String`
