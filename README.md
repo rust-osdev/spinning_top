@@ -2,7 +2,7 @@
 
 <img align="right" src="img/top.png" width=100px>
 
-[![Docs.rs Badge](https://docs.rs/spinning_top/badge.svg)](https://docs.rs/spinning_top/)
+[![Build Status](https://github.com/rust-osdev/spinning_top/workflows/Build/badge.svg)](https://github.com/rust-osdev/spinning_top/actions?query=workflow%3ABuild) [![Docs.rs Badge](https://docs.rs/spinning_top/badge.svg)](https://docs.rs/spinning_top/)
 
 A simple spinlock crate based on the abstractions provided by [`lock_api`].
 
