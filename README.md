@@ -1,6 +1,6 @@
 # spinning_top
 
-<img align="right" src="img/top.png" width=100px>
+<img alt="image of a spinning top" align="right" src="img/top.png" height=120px>
 
 [![Build Status](https://github.com/rust-osdev/spinning_top/workflows/Build/badge.svg)](https://github.com/rust-osdev/spinning_top/actions?query=workflow%3ABuild) [![Docs.rs Badge](https://docs.rs/spinning_top/badge.svg)](https://docs.rs/spinning_top/)
 
