@@ -6,6 +6,34 @@ A simple spinlock crate based on the abstractions provided by [`lock_api`].
 
 [`lock_api`]: https://docs.rs/lock_api/
 
+## Example
+
+First, import the crate as a dependency in your `Cargo.toml`. Then you can use it in the following way:
+
+```rust
+use spinning_top::Spinlock;
+
+fn main() {
+    // Wrap some data in a spinlock
+    let data = String::from("Hello");
+    let spinlock = Spinlock::new(data);
+    make_uppercase(&spinlock); // only pass a shared reference
+    // We have ownership of the spinlock, so we can extract the data without locking
+    // Note: this consumes the spinlock
+    let data = spinlock.into_inner();
+    assert_eq!(data.as_str(), "HELLO");
+}
+
+fn make_uppercase(spinlock: &Spinlock<String>) {
+    // Lock the spinlock to get a mutable reference to the data
+    let mut locked_data = spinlock.lock();
+    assert_eq!(locked_data.as_str(), "Hello");
+    locked_data.make_ascii_uppercase();
+
+    // the lock is automatically freed at the end of the scope
+}
+```
+
 ## License
 
 Licensed under either of

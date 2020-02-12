@@ -86,6 +86,23 @@ unsafe impl RawMutex for RawSpinlock {
 ///     // the lock is automatically freed at the end of the scope
 /// }
 /// ```
+/// 
+/// ## Nightly Example
+/// 
+/// On Rust nightly, the `new` function is a `const` function, which makes the
+/// `Spinlock` type usable in statics:
+/// 
+/// ```rust,ignore
+/// use spinning_top::Spinlock;
+/// 
+/// static DATA: Spinlock<u32> = Spinlock::new(0);
+/// 
+/// fn main() {
+///     let mut data = DATA.lock();
+///     *data += 1;
+///     assert_eq!(*data, 1);
+/// }
+/// ```
 pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 
 /// A RAII guard that frees the spinlock when it goes out of scope.

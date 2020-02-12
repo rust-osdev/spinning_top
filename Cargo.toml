@@ -3,8 +3,14 @@ name = "spinning_top"
 version = "0.1.0"
 authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+description = "A simple spinlock crate based on the abstractions provided by `lock_api`."
+repository = "https://github.com/rust-osdev/spinning_top"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+nightly = ["lock_api/nightly"]
 
 [dependencies]
 lock_api = "0.3.3"
