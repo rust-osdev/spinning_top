@@ -8,7 +8,7 @@
 //! use spinning_top::Spinlock;
 //! 
 //! fn main() {
-//!     let data = String::from("Hello");//! 
+//!     let data = String::from("Hello");
 //!     // Wrap some data in a spinlock
 //!     let spinlock = Spinlock::new(data);
 //! 
