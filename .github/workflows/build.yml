@@ -49,6 +49,9 @@ jobs:
     - name: "Run cargo test"
       run: cargo test
     
+    - name: "Run loom tests"
+      run: cargo test --features _loom_test --lib
+
     - name: "Run cargo doc"
       run: cargo doc
 

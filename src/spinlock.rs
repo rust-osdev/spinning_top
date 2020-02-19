@@ -3,8 +3,11 @@
 // and
 // https://github.com/mvdnes/spin-rs/tree/7516c8037d3d15712ba4d8499ab075e97a19d778
 
+#[cfg(not(feature = "_loom_test"))]
 use core::sync::atomic::{spin_loop_hint, AtomicBool, Ordering};
 use lock_api::{GuardSend, RawMutex};
+#[cfg(feature = "_loom_test")]
+use loom::sync::atomic::{spin_loop_hint, AtomicBool, Ordering};
 
 /// Provides mutual exclusion based on spinning on an `AtomicBool`.
 ///
@@ -26,6 +29,32 @@ pub struct RawSpinlock {
     locked: AtomicBool,
 }
 
+impl RawSpinlock {
+    fn lock_impl(&self) {
+        while !self.try_lock_impl() {
+            // Wait until the lock looks unlocked before retrying
+            // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
+            while self.locked.load(Ordering::Relaxed) {
+                // Tell the CPU that we're inside a busy-wait loop
+                spin_loop_hint();
+                #[cfg(feature = "_loom_test")]
+                loom::thread::yield_now();
+            }
+        }
+    }
+
+    fn try_lock_impl(&self) -> bool {
+        self.locked
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+    }
+
+    fn unlock_impl(&self) {
+        self.locked.store(false, Ordering::Release);
+    }
+}
+
+#[cfg(not(feature = "_loom_test"))]
 unsafe impl RawMutex for RawSpinlock {
     const INIT: RawSpinlock = RawSpinlock {
         locked: AtomicBool::new(false),
@@ -35,24 +64,15 @@ unsafe impl RawMutex for RawSpinlock {
     type GuardMarker = GuardSend;
 
     fn lock(&self) {
-        while !self.try_lock() {
-            // Wait until the lock looks unlocked before retrying
-            // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
-            while self.locked.load(Ordering::Relaxed) {
-                // Tell the CPU that we're inside a busy-wait loop
-                spin_loop_hint();
-            }
-        }
+        self.lock_impl()
     }
 
     fn try_lock(&self) -> bool {
-        self.locked
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_ok()
+        self.try_lock_impl()
     }
 
     fn unlock(&self) {
-        self.locked.store(false, Ordering::Release);
+        self.unlock_impl()
     }
 }
 
@@ -133,6 +153,7 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 /// assert!(spinlock.try_lock().is_some());
 pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 
+#[cfg(not(feature = "_loom_test"))]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,5 +194,46 @@ mod tests {
         assert!(spinlock3.try_lock().is_none());
         core::mem::drop(data3);
         assert!(spinlock3.try_lock().is_some());
+    }
+}
+
+#[cfg(feature = "_loom_test")]
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_concurrent() {
+        use loom::{sync::Arc, thread};
+        use std::cell::UnsafeCell;
+        use std::vec::Vec;
+
+        const THREADS: usize = 2;
+
+        loom::model(|| {
+            let spinlock = Arc::new(RawSpinlock {
+                locked: AtomicBool::new(false),
+            });
+            let data = Arc::new(UnsafeCell::new(0));
+
+            let threads: Vec<_> = (0..THREADS)
+                .map(|_| {
+                    let spinlock = spinlock.clone();
+                    let data = data.clone();
+                    thread::spawn(move || {
+                        spinlock.lock_impl();
+                        unsafe { *data.get() += 1 };
+                        spinlock.unlock_impl();
+                    })
+                })
+                .collect();
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+
+            spinlock.lock_impl();
+            assert_eq!(THREADS, unsafe { *data.get() });
+        });
     }
 }

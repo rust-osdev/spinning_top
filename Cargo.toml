@@ -11,6 +11,11 @@ repository = "https://github.com/rust-osdev/spinning_top"
 
 [features]
 nightly = ["lock_api/nightly"]
+_loom_test = ["loom"]
 
 [dependencies]
 lock_api = "0.3.3"
+
+[dependencies.loom]
+version = "0.2.14"
+optional = true

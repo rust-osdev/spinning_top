@@ -29,6 +29,9 @@
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 
+#[cfg(test)]
+extern crate std;
+
 /// The spinlock implemenation is based on the abstractions provided by the `lock_api` crate.
 pub use lock_api;
 
