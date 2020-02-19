@@ -38,6 +38,9 @@ unsafe impl RawMutex for RawSpinlock {
         while !self.try_lock() {
             // Wait until the lock looks unlocked before retrying
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
+            //
+            // Relaxed ordering is fine here because the actual synchronization happens in
+            // the outer `while` loop.
             while self.locked.load(Ordering::Relaxed) {
                 // Tell the CPU that we're inside a busy-wait loop
                 spin_loop_hint();
@@ -46,6 +49,15 @@ unsafe impl RawMutex for RawSpinlock {
     }
 
     fn try_lock(&self) -> bool {
+        // Code taken from:
+        // https://github.com/Amanieu/parking_lot/blob/fa294cd677936bf365afa0497039953b10c722f5/lock_api/src/lib.rs#L49-L53
+        //
+        // The reason for using a strong compare_exchange is explained here:
+        // https://github.com/Amanieu/parking_lot/pull/207#issuecomment-575869107
+        //
+        // The second Ordering argument specfies the ordering when the compare_exchange
+        // fails. Since we don't access any critical data if we fail to acquire the lock,
+        // we can use a Relaxed ordering in this case.
         self.locked
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
