@@ -18,7 +18,7 @@ use lock_api::{GuardSend, RawMutex};
 /// let lock = spinning_top::RawSpinlock::INIT;
 /// assert_eq!(lock.try_lock(), true); // lock it
 /// assert_eq!(lock.try_lock(), false); // can't be locked a second time
-/// lock.unlock(); // unlock it
+/// unsafe { lock.unlock(); } // unlock it
 /// assert_eq!(lock.try_lock(), true); // now it can be locked again
 #[derive(Debug)]
 pub struct RawSpinlock {
