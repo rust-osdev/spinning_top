@@ -38,10 +38,7 @@ unsafe impl RawMutex for RawSpinlock {
         while !self.try_lock() {
             // Wait until the lock looks unlocked before retrying
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
-            //
-            // Relaxed ordering is fine here because the actual synchronization happens in
-            // the outer `while` loop.
-            while self.locked.load(Ordering::Relaxed) {
+            while self.is_locked() {
                 // Tell the CPU that we're inside a busy-wait loop
                 spin_loop_hint();
             }
@@ -63,8 +60,13 @@ unsafe impl RawMutex for RawSpinlock {
             .is_ok()
     }
 
-    fn unlock(&self) {
+    unsafe fn unlock(&self) {
         self.locked.store(false, Ordering::Release);
+    }
+
+    fn is_locked(&self) -> bool {
+        // Relaxed is sufficient because this operation does not provide synchronization, only atomicity.
+        self.locked.load(Ordering::Relaxed)
     }
 }
 
