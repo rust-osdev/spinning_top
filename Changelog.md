@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.0 – 2020-07-06
+
 - **Breaking:** Upgrade `lock_api` to 0.4.0 ([#3](https://github.com/rust-osdev/spinning_top/pull/3))
 
 # 0.1.1
