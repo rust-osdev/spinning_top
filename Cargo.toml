@@ -1,6 +1,6 @@
 [package]
 name = "spinning_top"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
