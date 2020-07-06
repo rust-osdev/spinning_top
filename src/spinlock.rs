@@ -26,6 +26,17 @@ pub struct RawSpinlock {
     locked: AtomicBool,
 }
 
+impl RawSpinlock {
+    // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
+    // when called in a loop.
+    fn try_lock_weak(&self) -> bool {
+        // The Orderings are the same as try_lock, and are still correct here.
+        self.locked
+            .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+    }
+}
+
 unsafe impl RawMutex for RawSpinlock {
     const INIT: RawSpinlock = RawSpinlock {
         locked: AtomicBool::new(false),
@@ -35,7 +46,7 @@ unsafe impl RawMutex for RawSpinlock {
     type GuardMarker = GuardSend;
 
     fn lock(&self) {
-        while !self.try_lock() {
+        while !self.try_lock_weak() {
             // Wait until the lock looks unlocked before retrying
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
             //
