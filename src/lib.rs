@@ -20,7 +20,7 @@
 //!     // because the spinlock ensures mutual exclusion
 //!     locked_data.make_ascii_uppercase();
 //!     assert_eq!(locked_data.as_str(), "HELLO");
-//!     
+//!
 //!     // the guard automatically frees the lock at the end of the scope
 //! }
 //! ```
@@ -32,6 +32,6 @@
 /// The spinlock implemenation is based on the abstractions provided by the `lock_api` crate.
 pub use lock_api;
 
-pub use spinlock::{RawSpinlock, Spinlock, SpinlockGuard};
+pub use spinlock::{const_spinlock, RawSpinlock, Spinlock, SpinlockGuard};
 
 mod spinlock;
