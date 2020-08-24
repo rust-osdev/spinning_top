@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add owning_ref support ([#7](https://github.com/rust-osdev/spinning_top/pull/7))
+
 # 0.2.1 – 2020-07-07
 
 - Implement `const_spinlock` convenience function ([#5](https://github.com/rust-osdev/spinning_top/pull/5))
