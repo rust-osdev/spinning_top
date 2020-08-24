@@ -11,6 +11,7 @@ repository = "https://github.com/rust-osdev/spinning_top"
 
 [features]
 nightly = ["lock_api/nightly"]
+owning_ref = ["lock_api/owning_ref"]
 
 [dependencies]
 lock_api = "0.4.0"
