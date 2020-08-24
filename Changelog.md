@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.2 – 2020-08-24
+
 - Add owning_ref support ([#7](https://github.com/rust-osdev/spinning_top/pull/7))
 
 # 0.2.1 – 2020-07-07
