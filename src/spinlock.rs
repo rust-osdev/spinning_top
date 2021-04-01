@@ -3,7 +3,10 @@
 // and
 // https://github.com/mvdnes/spin-rs/tree/7516c8037d3d15712ba4d8499ab075e97a19d778
 
-use core::sync::atomic::{spin_loop_hint, AtomicBool, Ordering};
+use core::{
+    hint,
+    sync::atomic::{AtomicBool, Ordering},
+};
 use lock_api::{GuardSend, RawMutex};
 
 /// Provides mutual exclusion based on spinning on an `AtomicBool`.
@@ -51,7 +54,7 @@ unsafe impl RawMutex for RawSpinlock {
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
             while self.is_locked() {
                 // Tell the CPU that we're inside a busy-wait loop
-                spin_loop_hint();
+                hint::spin_loop();
             }
         }
     }
