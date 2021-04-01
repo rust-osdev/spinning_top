@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.3 – 2021-04-01
+
 - Fix `spin_loop_hint` warning on Rust 1.51
 
 # 0.2.2 – 2020-08-24
