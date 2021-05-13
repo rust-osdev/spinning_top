@@ -162,6 +162,33 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 /// ```
 pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 
+/// A RAII guard returned by `SpinlockGuard::map`.
+///
+/// ## Example
+/// ```rust
+/// use spinning_top::{MappedSpinlockGuard, Spinlock, SpinlockGuard};
+///
+/// let spinlock = Spinlock::new(Some(3));
+///
+/// // Begin a new scope.
+/// {
+///     // Lock the spinlock to create a `SpinlockGuard`.
+///     let mut guard: SpinlockGuard<_> = spinlock.lock();
+///
+///     // Map the internal value of `gurad`. `guard` is moved.
+///     let mut mapped: MappedSpinlockGuard<'_, _> =
+///         SpinlockGuard::map(guard, |g| g.as_mut().unwrap());
+///     assert_eq!(*mapped, 3);
+///
+///     *mapped = 5;
+///     assert_eq!(*mapped, 5);
+/// } // `mapped` is dropped -> frees the spinlock again.
+///
+/// // The operation is reflected to the original lock.
+/// assert_eq!(*spinlock.lock(), Some(5));
+/// ```
+pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock, T>;
+
 /// Create an unlocked `Spinlock` in a `const` context.
 ///
 /// ## Example
@@ -215,5 +242,18 @@ mod tests {
         assert!(spinlock3.try_lock().is_none());
         core::mem::drop(data3);
         assert!(spinlock3.try_lock().is_some());
+    }
+
+    #[test]
+    fn mapped_lock() {
+        let spinlock = Spinlock::new([1, 2, 3]);
+        let data = spinlock.lock();
+        let mut mapped = SpinlockGuard::map(data, |d| &mut d[0]);
+        assert_eq!(*mapped, 1);
+        *mapped = 4;
+        assert_eq!(*mapped, 4);
+        core::mem::drop(mapped);
+        assert!(!spinlock.is_locked());
+        assert_eq!(*spinlock.lock(), [4, 2, 3]);
     }
 }

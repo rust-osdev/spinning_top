@@ -32,6 +32,6 @@
 /// The spinlock implemenation is based on the abstractions provided by the `lock_api` crate.
 pub use lock_api;
 
-pub use spinlock::{const_spinlock, RawSpinlock, Spinlock, SpinlockGuard};
+pub use spinlock::{const_spinlock, MappedSpinlockGuard, RawSpinlock, Spinlock, SpinlockGuard};
 
 mod spinlock;
