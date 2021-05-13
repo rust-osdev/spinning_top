@@ -159,6 +159,7 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 ///
 /// // spinlock is unlocked again
 /// assert!(spinlock.try_lock().is_some());
+/// ```
 pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 
 /// Create an unlocked `Spinlock` in a `const` context.
