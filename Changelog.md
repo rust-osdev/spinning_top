@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.4 – 2021-05-13
+
 - Define `MappedSpinlockGuard` alias [#12](https://github.com/rust-osdev/spinning_top/pull/12)
   - makes use of `SpinlockGuard::map` easier
 
