@@ -1,5 +1,8 @@
 # Unreleased
 
+- Define `MappedSpinlockGuard` alias [#12](https://github.com/rust-osdev/spinning_top/pull/12)
+  - makes use of `SpinlockGuard::map` easier
+
 # 0.2.3 – 2021-04-01
 
 - Fix `spin_loop_hint` warning on Rust 1.51
