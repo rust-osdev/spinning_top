@@ -116,10 +116,9 @@ unsafe impl RawMutex for RawSpinlock {
 /// }
 /// ```
 ///
-/// ## Nightly Example
+/// ## Usage in statics
 ///
-/// On Rust nightly, the `nightly` feature of this crate can be enabled to
-/// make the `new` function a `const` function. This makes the `Spinlock` type
+/// `Spinlock::new` is a `const` function. This makes the `Spinlock` type
 /// usable in statics:
 ///
 /// ```rust,ignore
