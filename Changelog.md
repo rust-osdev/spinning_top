@@ -1,5 +1,7 @@
 # Unreleased
 
+- Upgrade `lock_api` to 0.4.7. This makes `Spinlock::new` a `const` function without needing nightly rust.
+
 # 0.2.4 – 2021-05-13
 
 - Define `MappedSpinlockGuard` alias [#12](https://github.com/rust-osdev/spinning_top/pull/12)
