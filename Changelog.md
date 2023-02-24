@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.5 – 2023-02-24
+
 - Upgrade `lock_api` to 0.4.7. This makes `Spinlock::new` a `const` function without needing nightly rust.
 
 # 0.2.4 – 2021-05-13
