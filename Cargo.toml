@@ -15,6 +15,9 @@ owning_ref = ["lock_api/owning_ref"]
 [dependencies]
 lock_api = "0.4.7"
 
+[dev-dependencies]
+rand = "0.8"
+
 [package.metadata.release]
 dev-version = false
 pre-release-replacements = [
