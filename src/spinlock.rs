@@ -32,6 +32,7 @@ pub struct RawSpinlock {
 impl RawSpinlock {
     // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
     // when called in a loop.
+    #[inline]
     fn try_lock_weak(&self) -> bool {
         // The Orderings are the same as try_lock, and are still correct here.
         self.locked
@@ -48,6 +49,7 @@ unsafe impl RawMutex for RawSpinlock {
     // A spinlock guard can be sent to another thread and unlocked there
     type GuardMarker = GuardSend;
 
+    #[inline]
     fn lock(&self) {
         while !self.try_lock_weak() {
             // Wait until the lock looks unlocked before retrying
@@ -59,6 +61,7 @@ unsafe impl RawMutex for RawSpinlock {
         }
     }
 
+    #[inline]
     fn try_lock(&self) -> bool {
         // Code taken from:
         // https://github.com/Amanieu/parking_lot/blob/fa294cd677936bf365afa0497039953b10c722f5/lock_api/src/lib.rs#L49-L53
@@ -74,10 +77,12 @@ unsafe impl RawMutex for RawSpinlock {
             .is_ok()
     }
 
+    #[inline]
     unsafe fn unlock(&self) {
         self.locked.store(false, Ordering::Release);
     }
 
+    #[inline]
     fn is_locked(&self) -> bool {
         // Relaxed is sufficient because this operation does not provide synchronization, only atomicity.
         self.locked.load(Ordering::Relaxed)
@@ -197,6 +202,7 @@ pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock
 ///
 /// static SPINLOCK: Spinlock<i32> = const_spinlock(42);
 /// ```
+#[inline]
 pub const fn const_spinlock<T>(val: T) -> Spinlock<T> {
     Spinlock::const_new(<RawSpinlock as lock_api::RawMutex>::INIT, val)
 }
