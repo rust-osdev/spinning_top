@@ -179,7 +179,7 @@ pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 ///     // Lock the spinlock to create a `SpinlockGuard`.
 ///     let mut guard: SpinlockGuard<_> = spinlock.lock();
 ///
-///     // Map the internal value of `gurad`. `guard` is moved.
+///     // Map the internal value of `guard`. `guard` is moved.
 ///     let mut mapped: MappedSpinlockGuard<'_, _> =
 ///         SpinlockGuard::map(guard, |g| g.as_mut().unwrap());
 ///     assert_eq!(*mapped, 3);
