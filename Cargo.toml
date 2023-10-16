@@ -10,8 +10,6 @@ repository = "https://github.com/rust-osdev/spinning_top"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-# Deprecated - has no effect
-nightly = []
 owning_ref = ["lock_api/owning_ref"]
 
 [dependencies]
