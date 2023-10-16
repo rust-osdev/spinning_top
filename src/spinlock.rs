@@ -193,20 +193,6 @@ pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 /// ```
 pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock, T>;
 
-/// Create an unlocked `Spinlock` in a `const` context.
-///
-/// ## Example
-///
-/// ```rust
-/// use spinning_top::{const_spinlock, Spinlock};
-///
-/// static SPINLOCK: Spinlock<i32> = const_spinlock(42);
-/// ```
-#[inline]
-pub const fn const_spinlock<T>(val: T) -> Spinlock<T> {
-    Spinlock::const_new(<RawSpinlock as lock_api::RawMutex>::INIT, val)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
