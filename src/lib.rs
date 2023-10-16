@@ -32,11 +32,14 @@
 /// The spinlock implemenation is based on the abstractions provided by the `lock_api` crate.
 pub use lock_api;
 
-pub use spinlock::{RawSpinlock, Spinlock};
+pub use spinlock::{BackoffSpinlock, RawSpinlock, Spinlock};
 
 /// Type aliases for guards.
 pub mod guard {
-    pub use super::spinlock::{MappedSpinlockGuard, SpinlockGuard};
+    pub use super::spinlock::{
+        BackoffSpinlockGuard, MappedBackoffSpinlockGuard, MappedSpinlockGuard, SpinlockGuard,
+    };
 }
 
+pub mod relax;
 mod spinlock;
