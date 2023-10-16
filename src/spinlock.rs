@@ -126,7 +126,7 @@ unsafe impl RawMutex for RawSpinlock {
 /// `Spinlock::new` is a `const` function. This makes the `Spinlock` type
 /// usable in statics:
 ///
-/// ```rust,ignore
+/// ```rust
 /// use spinning_top::Spinlock;
 ///
 /// static DATA: Spinlock<u32> = Spinlock::new(0);
