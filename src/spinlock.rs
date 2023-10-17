@@ -3,11 +3,11 @@
 // and
 // https://github.com/mvdnes/spin-rs/tree/7516c8037d3d15712ba4d8499ab075e97a19d778
 
-use core::{
-    hint,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use core::marker::PhantomData;
+use core::sync::atomic::{AtomicBool, Ordering};
 use lock_api::{GuardSend, RawMutex};
+
+use crate::relax::{Backoff, Relax, Spin};
 
 /// Provides mutual exclusion based on spinning on an `AtomicBool`.
 ///
@@ -18,18 +18,21 @@ use lock_api::{GuardSend, RawMutex};
 ///
 /// ```rust
 /// use lock_api::RawMutex;
-/// let lock = spinning_top::RawSpinlock::INIT;
+/// use spinning_top::RawSpinlock;
+///
+/// let lock: RawSpinlock = RawSpinlock::INIT;
 /// assert_eq!(lock.try_lock(), true); // lock it
 /// assert_eq!(lock.try_lock(), false); // can't be locked a second time
 /// unsafe { lock.unlock(); } // unlock it
 /// assert_eq!(lock.try_lock(), true); // now it can be locked again
 #[derive(Debug)]
-pub struct RawSpinlock {
+pub struct RawSpinlock<R: Relax = Spin> {
     /// Whether the spinlock is locked.
     locked: AtomicBool,
+    relax: PhantomData<R>,
 }
 
-impl RawSpinlock {
+impl<R: Relax> RawSpinlock<R> {
     // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
     // when called in a loop.
     #[inline]
@@ -41,9 +44,10 @@ impl RawSpinlock {
     }
 }
 
-unsafe impl RawMutex for RawSpinlock {
-    const INIT: RawSpinlock = RawSpinlock {
+unsafe impl<R: Relax> RawMutex for RawSpinlock<R> {
+    const INIT: RawSpinlock<R> = RawSpinlock {
         locked: AtomicBool::new(false),
+        relax: PhantomData,
     };
 
     // A spinlock guard can be sent to another thread and unlocked there
@@ -51,12 +55,14 @@ unsafe impl RawMutex for RawSpinlock {
 
     #[inline]
     fn lock(&self) {
+        let mut relax = R::default();
+
         while !self.try_lock_weak() {
             // Wait until the lock looks unlocked before retrying
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
             while self.is_locked() {
                 // Tell the CPU that we're inside a busy-wait loop
-                hint::spin_loop();
+                relax.relax();
             }
         }
     }
@@ -137,7 +143,7 @@ unsafe impl RawMutex for RawSpinlock {
 ///     assert_eq!(*data, 1);
 /// }
 /// ```
-pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
+pub type Spinlock<T> = lock_api::Mutex<RawSpinlock<Spin>, T>;
 
 /// A RAII guard that frees the spinlock when it goes out of scope.
 ///
@@ -146,7 +152,7 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 /// ## Example
 ///
 /// ```rust
-/// use spinning_top::{Spinlock, SpinlockGuard};
+/// use spinning_top::{guard::SpinlockGuard, Spinlock};
 ///
 /// let spinlock = Spinlock::new(Vec::new());
 ///
@@ -164,13 +170,16 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 /// // spinlock is unlocked again
 /// assert!(spinlock.try_lock().is_some());
 /// ```
-pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
+pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock<Spin>, T>;
 
 /// A RAII guard returned by `SpinlockGuard::map`.
 ///
 /// ## Example
 /// ```rust
-/// use spinning_top::{MappedSpinlockGuard, Spinlock, SpinlockGuard};
+/// use spinning_top::{
+///     guard::{MappedSpinlockGuard, SpinlockGuard},
+///     Spinlock,
+/// };
 ///
 /// let spinlock = Spinlock::new(Some(3));
 ///
@@ -191,7 +200,115 @@ pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 /// // The operation is reflected to the original lock.
 /// assert_eq!(*spinlock.lock(), Some(5));
 /// ```
-pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock, T>;
+pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock<Spin>, T>;
+
+/// A mutual exclusion (Mutex) type based on busy-waiting with exponential backoff.
+///
+/// Calling `lock` (or `try_lock`) on this type returns a [`BackoffSpinlockGuard`], which
+/// automatically frees the lock when it goes out of scope.
+///
+/// ## Example
+///
+/// ```rust
+/// use spinning_top::BackoffSpinlock;
+///
+/// fn main() {
+///     // Wrap some data in a spinlock
+///     let data = String::from("Hello");
+///     let spinlock = BackoffSpinlock::new(data);
+///     make_uppercase(&spinlock); // only pass a shared reference
+///
+///     // We have ownership of the spinlock, so we can extract the data without locking
+///     // Note: this consumes the spinlock
+///     let data = spinlock.into_inner();
+///     assert_eq!(data.as_str(), "HELLO");
+/// }
+///
+/// fn make_uppercase(spinlock: &BackoffSpinlock<String>) {
+///     // Lock the spinlock to get a mutable reference to the data
+///     let mut locked_data = spinlock.lock();
+///     assert_eq!(locked_data.as_str(), "Hello");
+///     locked_data.make_ascii_uppercase();
+///
+///     // the lock is automatically freed at the end of the scope
+/// }
+/// ```
+///
+/// ## Usage in statics
+///
+/// `BackoffSpinlock::new` is a `const` function. This makes the `BackoffSpinlock` type
+/// usable in statics:
+///
+/// ```rust
+/// use spinning_top::BackoffSpinlock;
+///
+/// static DATA: BackoffSpinlock<u32> = BackoffSpinlock::new(0);
+///
+/// fn main() {
+///     let mut data = DATA.lock();
+///     *data += 1;
+///     assert_eq!(*data, 1);
+/// }
+/// ```
+pub type BackoffSpinlock<T> = lock_api::Mutex<RawSpinlock<Backoff>, T>;
+
+/// A RAII guard that frees the exponential backoff spinlock when it goes out of scope.
+///
+/// Allows access to the locked data through the [`core::ops::Deref`] and [`core::ops::DerefMut`] operations.
+///
+/// ## Example
+///
+/// ```rust
+/// use spinning_top::{guard::BackoffSpinlockGuard, BackoffSpinlock};
+///
+/// let spinlock = BackoffSpinlock::new(Vec::new());
+///
+/// // begin a new scope
+/// {
+///     // lock the spinlock to create a `BackoffSpinlockGuard`
+///     let mut guard: BackoffSpinlockGuard<_> = spinlock.lock();
+///
+///     // guard can be used like a `&mut Vec` since it implements `DerefMut`
+///     guard.push(1);
+///     guard.push(2);
+///     assert_eq!(guard.len(), 2);
+/// } // guard is dropped -> frees the spinlock again
+///
+/// // spinlock is unlocked again
+/// assert!(spinlock.try_lock().is_some());
+/// ```
+pub type BackoffSpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock<Backoff>, T>;
+
+/// A RAII guard returned by `BackoffSpinlockGuard::map`.
+///
+/// ## Example
+/// ```rust
+/// use spinning_top::{
+///     guard::{BackoffSpinlockGuard, MappedBackoffSpinlockGuard},
+///     BackoffSpinlock,
+/// };
+///
+/// let spinlock = BackoffSpinlock::new(Some(3));
+///
+/// // Begin a new scope.
+/// {
+///     // Lock the spinlock to create a `BackoffSpinlockGuard`.
+///     let mut guard: BackoffSpinlockGuard<_> = spinlock.lock();
+///
+///     // Map the internal value of `guard`. `guard` is moved.
+///     let mut mapped: MappedBackoffSpinlockGuard<'_, _> =
+///         BackoffSpinlockGuard::map(guard, |g| g.as_mut().unwrap());
+///     assert_eq!(*mapped, 3);
+///
+///     *mapped = 5;
+///     assert_eq!(*mapped, 5);
+/// } // `mapped` is dropped -> frees the spinlock again.
+///
+/// // The operation is reflected to the original lock.
+/// assert_eq!(*spinlock.lock(), Some(5));
+/// ```
+pub type MappedBackoffSpinlockGuard<'a, T> =
+    lock_api::MappedMutexGuard<'a, RawSpinlock<Backoff>, T>;
 
 #[cfg(test)]
 mod tests {
