@@ -146,7 +146,7 @@ pub type Spinlock<T> = lock_api::Mutex<RawSpinlock, T>;
 /// ## Example
 ///
 /// ```rust
-/// use spinning_top::{Spinlock, SpinlockGuard};
+/// use spinning_top::{guard::SpinlockGuard, Spinlock};
 ///
 /// let spinlock = Spinlock::new(Vec::new());
 ///
@@ -170,7 +170,10 @@ pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock, T>;
 ///
 /// ## Example
 /// ```rust
-/// use spinning_top::{MappedSpinlockGuard, Spinlock, SpinlockGuard};
+/// use spinning_top::{
+///     guard::{MappedSpinlockGuard, SpinlockGuard},
+///     Spinlock,
+/// };
 ///
 /// let spinlock = Spinlock::new(Some(3));
 ///
