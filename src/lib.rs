@@ -51,6 +51,7 @@
 //! ```
 
 #![cfg_attr(not(test), no_std)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 
@@ -62,11 +63,19 @@ pub use spinlock::{BackoffSpinlock, RawSpinlock, Spinlock};
 
 /// Type aliases for guards.
 pub mod guard {
+    #[cfg(feature = "arc_lock")]
+    pub use super::rw_spinlock::{
+        ArcBackoffRwSpinlockReadGuard, ArcBackoffRwSpinlockUpgradableReadGuard,
+        ArcBackoffRwSpinlockWriteGuard, ArcRwSpinlockReadGuard, ArcRwSpinlockUpgradableReadGuard,
+        ArcRwSpinlockWriteGuard,
+    };
     pub use super::rw_spinlock::{
         BackoffRwSpinlockReadGuard, BackoffRwSpinlockUpgradableReadGuard,
         BackoffRwSpinlockWriteGuard, RwSpinlockReadGuard, RwSpinlockUpgradableReadGuard,
         RwSpinlockWriteGuard,
     };
+    #[cfg(feature = "arc_lock")]
+    pub use super::spinlock::{ArcBackoffSpinlockGuard, ArcSpinlockGuard};
     pub use super::spinlock::{
         BackoffSpinlockGuard, MappedBackoffSpinlockGuard, MappedSpinlockGuard, SpinlockGuard,
     };
