@@ -232,6 +232,19 @@ pub type RwSpinlockUpgradableReadGuard<'a, T> =
 /// A [`lock_api::RwLockWriteGuard`] based on [`RawRwSpinlock`].
 pub type RwSpinlockWriteGuard<'a, T> = lock_api::RwLockWriteGuard<'a, RawRwSpinlock<Spin>, T>;
 
+/// A [`lock_api::ArcRwLockReadGuard`] based on [`RawRwSpinlock`].
+#[cfg(feature = "arc_lock")]
+pub type ArcRwSpinlockReadGuard<T> = lock_api::ArcRwLockReadGuard<RawRwSpinlock<Spin>, T>;
+
+/// A [`lock_api::ArcRwLockUpgradableReadGuard`] based on [`RawRwSpinlock`].
+#[cfg(feature = "arc_lock")]
+pub type ArcRwSpinlockUpgradableReadGuard<T> =
+    lock_api::ArcRwLockUpgradableReadGuard<RawRwSpinlock<Spin>, T>;
+
+/// A [`lock_api::ArcRwLockWriteGuard`] based on [`RawRwSpinlock`].
+#[cfg(feature = "arc_lock")]
+pub type ArcRwSpinlockWriteGuard<T> = lock_api::ArcRwLockWriteGuard<RawRwSpinlock<Spin>, T>;
+
 /// A [`lock_api::RwLock`] based on [`RawRwSpinlock`]`<`[`Backoff`]`>`.
 pub type BackoffRwSpinlock<T> = lock_api::RwLock<RawRwSpinlock<Backoff>, T>;
 
@@ -246,6 +259,20 @@ pub type BackoffRwSpinlockUpgradableReadGuard<'a, T> =
 /// A [`lock_api::RwLockWriteGuard`] based on [`RawRwSpinlock`]`<`[`Backoff`]`>`.
 pub type BackoffRwSpinlockWriteGuard<'a, T> =
     lock_api::RwLockWriteGuard<'a, RawRwSpinlock<Backoff>, T>;
+
+/// A [`lock_api::ArcRwLockReadGuard`] based on [`RawRwSpinlock`]`<`[`Backoff`]`>`.
+#[cfg(feature = "arc_lock")]
+pub type ArcBackoffRwSpinlockReadGuard<T> = lock_api::ArcRwLockReadGuard<RawRwSpinlock<Backoff>, T>;
+
+/// A [`lock_api::ArcRwLockUpgradableReadGuard`] based on [`RawRwSpinlock`]`<`[`Backoff`]`>`.
+#[cfg(feature = "arc_lock")]
+pub type ArcBackoffRwSpinlockUpgradableReadGuard<T> =
+    lock_api::ArcRwLockUpgradableReadGuard<RawRwSpinlock<Backoff>, T>;
+
+/// A [`lock_api::ArcRwLockWriteGuard`] based on [`RawRwSpinlock`]`<`[`Backoff`]`>`.
+#[cfg(feature = "arc_lock")]
+pub type ArcBackoffRwSpinlockWriteGuard<T> =
+    lock_api::ArcRwLockWriteGuard<RawRwSpinlock<Backoff>, T>;
 
 // Adapted from `spin::rwlock`.
 #[cfg(test)]

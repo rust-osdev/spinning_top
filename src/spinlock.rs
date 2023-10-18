@@ -202,6 +202,10 @@ pub type SpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock<Spin>, T>;
 /// ```
 pub type MappedSpinlockGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawSpinlock<Spin>, T>;
 
+/// A [`lock_api::ArcMutexGuard`] based on [`RawSpinlock`]`.
+#[cfg(feature = "arc_lock")]
+pub type ArcSpinlockGuard<T> = lock_api::ArcMutexGuard<RawSpinlock<Spin>, T>;
+
 /// A mutual exclusion (Mutex) type based on busy-waiting with exponential backoff.
 ///
 /// Calling `lock` (or `try_lock`) on this type returns a [`BackoffSpinlockGuard`], which
@@ -309,6 +313,10 @@ pub type BackoffSpinlockGuard<'a, T> = lock_api::MutexGuard<'a, RawSpinlock<Back
 /// ```
 pub type MappedBackoffSpinlockGuard<'a, T> =
     lock_api::MappedMutexGuard<'a, RawSpinlock<Backoff>, T>;
+
+/// A [`lock_api::ArcMutexGuard`] based on [`RawSpinlock`]`<`[`Backoff`]`>`.
+#[cfg(feature = "arc_lock")]
+pub type ArcBackoffSpinlockGuard<T> = lock_api::ArcMutexGuard<RawSpinlock<Backoff>, T>;
 
 #[cfg(test)]
 mod tests {

@@ -10,6 +10,7 @@ repository = "https://github.com/rust-osdev/spinning_top"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+arc_lock = ["lock_api/arc_lock"]
 owning_ref = ["lock_api/owning_ref"]
 
 [dependencies]

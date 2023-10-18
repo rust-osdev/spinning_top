@@ -62,11 +62,19 @@ pub use spinlock::{BackoffSpinlock, RawSpinlock, Spinlock};
 
 /// Type aliases for guards.
 pub mod guard {
+    #[cfg(feature = "arc_lock")]
+    pub use super::rw_spinlock::{
+        ArcBackoffRwSpinlockReadGuard, ArcBackoffRwSpinlockUpgradableReadGuard,
+        ArcBackoffRwSpinlockWriteGuard, ArcRwSpinlockReadGuard, ArcRwSpinlockUpgradableReadGuard,
+        ArcRwSpinlockWriteGuard,
+    };
     pub use super::rw_spinlock::{
         BackoffRwSpinlockReadGuard, BackoffRwSpinlockUpgradableReadGuard,
         BackoffRwSpinlockWriteGuard, RwSpinlockReadGuard, RwSpinlockUpgradableReadGuard,
         RwSpinlockWriteGuard,
     };
+    #[cfg(feature = "arc_lock")]
+    pub use super::spinlock::{ArcBackoffSpinlockGuard, ArcSpinlockGuard};
     pub use super::spinlock::{
         BackoffSpinlockGuard, MappedBackoffSpinlockGuard, MappedSpinlockGuard, SpinlockGuard,
     };
