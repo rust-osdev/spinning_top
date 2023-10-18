@@ -7,7 +7,9 @@ license = "MIT/Apache-2.0"
 description = "A simple spinlock crate based on the abstractions provided by `lock_api`."
 repository = "https://github.com/rust-osdev/spinning_top"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [features]
 arc_lock = ["lock_api/arc_lock"]
