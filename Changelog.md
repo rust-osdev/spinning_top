@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.3.0 – 2023-10-19
+
 ## Breaking
 
 * [feat: add backoff feature](https://github.com/rust-osdev/spinning_top/pull/16)
