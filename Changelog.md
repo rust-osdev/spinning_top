@@ -1,5 +1,23 @@
 # Unreleased
 
+## Breaking
+
+* [feat: add backoff feature](https://github.com/rust-osdev/spinning_top/pull/16)
+* [chore: remove `const_spinlock` function](https://github.com/rust-osdev/spinning_top/pull/20)
+* [chore: remove deprecated `nightly` feature](https://github.com/rust-osdev/spinning_top/pull/21)
+
+## Improvements
+
+* [feat: add `RwSpinlock` readers-writer lock](https://github.com/rust-osdev/spinning_top/pull/18)
+* [feat: add `arc_lock` feature and typedefs](https://github.com/rust-osdev/spinning_top/pull/25)
+* [perf: inline everything](https://github.com/rust-osdev/spinning_top/pull/17)
+* [docs: fix typo](https://github.com/rust-osdev/spinning_top/pull/23)
+
+## Other
+
+* [ci: build with all features](https://github.com/rust-osdev/spinning_top/pull/19)
+* [test: don't ignore statics example](https://github.com/rust-osdev/spinning_top/pull/22)
+
 # 0.2.5 – 2023-02-24
 
 - Upgrade `lock_api` to 0.4.7. This makes `Spinlock::new` a `const` function without needing nightly rust.
