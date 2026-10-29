@@ -189,7 +189,7 @@ unsafe impl<R: Relax> RawRwLockUpgrade for RawRwSpinlock<R> {
         let mut guard = guard;
 
         loop {
-            match self.try_upgrade(guard) {
+            match unsafe { self.try_upgrade(guard) } {
                 Ok(exclusive_guard) => return exclusive_guard,
                 Err(shared_guard) => {
                     guard = shared_guard;
@@ -296,9 +296,9 @@ pub type ArcBackoffRwSpinlockWriteGuard<T> =
 // Adapted from `spin::rwlock`.
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::mpsc::channel;
-    use std::sync::Arc;
     use std::{mem, thread};
 
     use lock_api::{RwLockUpgradableReadGuard, RwLockWriteGuard};
