@@ -163,17 +163,11 @@ unsafe impl<R: Relax> RawRwLockUpgrade for RawRwSpinlock<R> {
 
     #[inline]
     fn try_lock_upgradable(&self) -> bool {
-        let value = self.lock.fetch_or(UPGRADABLE, Ordering::Acquire);
-
-        let acquired = value & (UPGRADABLE | EXCLUSIVE) == 0;
-
-        if !acquired && value & UPGRADABLE == 0 {
-            unsafe {
-                self.unlock_upgradable();
-            }
-        }
-
-        acquired
+        self.lock
+            .try_update(Ordering::Acquire, Ordering::Relaxed, |state| {
+                (state & (EXCLUSIVE | UPGRADABLE) == 0).then_some(state | UPGRADABLE)
+            })
+            .is_ok()
     }
 
     #[inline]
