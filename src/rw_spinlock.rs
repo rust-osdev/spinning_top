@@ -2,8 +2,7 @@ use core::marker::PhantomData;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use lock_api::{
-    GuardSend, RawRwLock, RawRwLockDowngrade, RawRwLockRecursive, RawRwLockUpgrade,
-    RawRwLockUpgradeDowngrade,
+    GuardSend, RawRwLock, RawRwLockDowngrade, RawRwLockUpgrade, RawRwLockUpgradeDowngrade,
 };
 
 use crate::relax::{Backoff, Relax, Spin};
@@ -60,57 +59,67 @@ unsafe impl<R: Relax> RawRwLock for RawRwSpinlock<R> {
         relax: PhantomData,
     };
 
-    type GuardMarker = GuardSend;
+    type SharedGuard = GuardSend;
+    type ExclusiveGuard = GuardSend;
 
     #[inline]
-    fn lock_shared(&self) {
+    fn lock_shared(&self) -> Self::SharedGuard {
         let mut relax = R::default();
 
-        while !self.try_lock_shared() {
+        loop {
+            if let Some(guard) = self.try_lock_shared() {
+                return guard;
+            }
+
             relax.relax();
         }
     }
 
     #[inline]
-    fn try_lock_shared(&self) -> bool {
+    fn try_lock_shared(&self) -> Option<Self::SharedGuard> {
         let value = self.acquire_shared();
 
         let acquired = value & EXCLUSIVE != EXCLUSIVE;
 
         if !acquired {
             unsafe {
-                self.unlock_shared();
+                self.unlock_shared(Self::SharedGuard::new());
             }
         }
 
-        acquired
+        acquired.then(Self::SharedGuard::new)
     }
 
     #[inline]
-    unsafe fn unlock_shared(&self) {
+    unsafe fn unlock_shared(&self, _guard: Self::SharedGuard) {
         debug_assert!(self.is_locked_shared());
 
         self.lock.fetch_sub(SHARED, Ordering::Release);
     }
 
     #[inline]
-    fn lock_exclusive(&self) {
+    fn lock_exclusive(&self) -> Self::ExclusiveGuard {
         let mut relax = R::default();
 
-        while !self.try_lock_exclusive() {
+        loop {
+            if let Some(guard) = self.try_lock_exclusive() {
+                return guard;
+            }
+
             relax.relax();
         }
     }
 
     #[inline]
-    fn try_lock_exclusive(&self) -> bool {
+    fn try_lock_exclusive(&self) -> Option<Self::ExclusiveGuard> {
         self.lock
             .compare_exchange(0, EXCLUSIVE, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+            .then(Self::ExclusiveGuard::new)
     }
 
     #[inline]
-    unsafe fn unlock_exclusive(&self) {
+    unsafe fn unlock_exclusive(&self, _guard: Self::ExclusiveGuard) {
         debug_assert!(self.is_locked_exclusive());
 
         self.lock.fetch_and(!EXCLUSIVE, Ordering::Release);
@@ -127,89 +136,105 @@ unsafe impl<R: Relax> RawRwLock for RawRwSpinlock<R> {
     }
 }
 
-unsafe impl<R: Relax> RawRwLockRecursive for RawRwSpinlock<R> {
-    #[inline]
-    fn lock_shared_recursive(&self) {
-        self.lock_shared();
-    }
-
-    #[inline]
-    fn try_lock_shared_recursive(&self) -> bool {
-        self.try_lock_shared()
-    }
-}
-
 unsafe impl<R: Relax> RawRwLockDowngrade for RawRwSpinlock<R> {
     #[inline]
-    unsafe fn downgrade(&self) {
+    unsafe fn downgrade(&self, guard: Self::ExclusiveGuard) -> Self::SharedGuard {
         // Reserve the shared guard for ourselves
         self.acquire_shared();
 
         unsafe {
-            self.unlock_exclusive();
+            self.unlock_exclusive(guard);
         }
+
+        Self::SharedGuard::new()
     }
 }
 
 unsafe impl<R: Relax> RawRwLockUpgrade for RawRwSpinlock<R> {
+    type UpgradableGuard = GuardSend;
+
     #[inline]
-    fn lock_upgradable(&self) {
+    fn lock_upgradable(&self) -> Self::UpgradableGuard {
         let mut relax = R::default();
 
-        while !self.try_lock_upgradable() {
+        loop {
+            if let Some(guard) = self.try_lock_upgradable() {
+                return guard;
+            }
+
             relax.relax();
         }
     }
 
     #[inline]
-    fn try_lock_upgradable(&self) -> bool {
+    fn try_lock_upgradable(&self) -> Option<Self::UpgradableGuard> {
         self.lock
             .try_update(Ordering::Acquire, Ordering::Relaxed, |state| {
                 (state & (EXCLUSIVE | UPGRADABLE) == 0).then_some(state | UPGRADABLE)
             })
             .is_ok()
+            .then(Self::UpgradableGuard::new)
     }
 
     #[inline]
-    unsafe fn unlock_upgradable(&self) {
+    unsafe fn unlock_upgradable(&self, _guard: Self::UpgradableGuard) {
         debug_assert!(self.is_locked_upgradable());
 
         self.lock.fetch_and(!UPGRADABLE, Ordering::Release);
     }
 
     #[inline]
-    unsafe fn upgrade(&self) {
+    unsafe fn upgrade(&self, guard: Self::UpgradableGuard) -> Self::ExclusiveGuard {
         let mut relax = R::default();
+        let mut guard = guard;
 
-        while !self.try_upgrade() {
-            relax.relax();
+        loop {
+            match self.try_upgrade(guard) {
+                Ok(exclusive_guard) => return exclusive_guard,
+                Err(shared_guard) => {
+                    guard = shared_guard;
+                    relax.relax();
+                }
+            }
         }
     }
 
     #[inline]
-    unsafe fn try_upgrade(&self) -> bool {
+    unsafe fn try_upgrade(
+        &self,
+        guard: Self::UpgradableGuard,
+    ) -> Result<Self::ExclusiveGuard, Self::UpgradableGuard> {
         self.lock
             .compare_exchange(UPGRADABLE, EXCLUSIVE, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+            .then(Self::ExclusiveGuard::new)
+            .ok_or(guard)
     }
 }
 
 unsafe impl<R: Relax> RawRwLockUpgradeDowngrade for RawRwSpinlock<R> {
     #[inline]
-    unsafe fn downgrade_upgradable(&self) {
+    unsafe fn downgrade_upgradable(&self, guard: Self::UpgradableGuard) -> Self::SharedGuard {
         self.acquire_shared();
 
         unsafe {
-            self.unlock_upgradable();
+            self.unlock_upgradable(guard);
         }
+
+        Self::SharedGuard::new()
     }
 
     #[inline]
-    unsafe fn downgrade_to_upgradable(&self) {
+    unsafe fn downgrade_to_upgradable(
+        &self,
+        _guard: Self::ExclusiveGuard,
+    ) -> Self::UpgradableGuard {
         debug_assert!(self.is_locked_exclusive());
 
         self.lock
             .fetch_xor(UPGRADABLE | EXCLUSIVE, Ordering::Release);
+
+        Self::UpgradableGuard::new()
     }
 }
 
@@ -283,30 +308,30 @@ mod tests {
     #[test]
     fn test_unlock_shared() {
         let m: RawRwSpinlock = RawRwSpinlock::INIT;
-        m.lock_shared();
-        m.lock_shared();
-        m.lock_shared();
-        assert!(!m.try_lock_exclusive());
+        let guard1 = m.lock_shared();
+        let guard2 = m.lock_shared();
+        let guard3 = m.lock_shared();
+        assert!(m.try_lock_exclusive().is_none());
         unsafe {
-            m.unlock_shared();
-            m.unlock_shared();
+            m.unlock_shared(guard1);
+            m.unlock_shared(guard2);
         }
-        assert!(!m.try_lock_exclusive());
+        assert!(m.try_lock_exclusive().is_none());
         unsafe {
-            m.unlock_shared();
+            m.unlock_shared(guard3);
         }
-        assert!(m.try_lock_exclusive());
+        assert!(m.try_lock_exclusive().is_some());
     }
 
     #[test]
     fn test_unlock_exclusive() {
         let m: RawRwSpinlock = RawRwSpinlock::INIT;
-        m.lock_exclusive();
-        assert!(!m.try_lock_shared());
+        let guard = m.lock_exclusive();
+        assert!(m.try_lock_shared().is_none());
         unsafe {
-            m.unlock_exclusive();
+            m.unlock_exclusive(guard);
         }
-        assert!(m.try_lock_shared());
+        assert!(m.try_lock_shared().is_some());
     }
 
     #[test]
