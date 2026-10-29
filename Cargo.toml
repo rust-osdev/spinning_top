@@ -3,7 +3,7 @@ name = "spinning_top"
 version = "0.3.0"
 authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 description = "A simple spinlock crate based on the abstractions provided by `lock_api`."
 repository = "https://github.com/rust-osdev/spinning_top"
 
