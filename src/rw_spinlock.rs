@@ -447,14 +447,10 @@ mod tests {
         let lock = RwSpinlock::new(0isize);
         let read_guard = lock.read();
 
-        let write_result = lock.try_write();
-        match write_result {
-            None => (),
-            Some(_) => assert!(
-                false,
-                "try_write should not succeed while read_guard is in scope"
-            ),
-        }
+        assert!(
+            lock.try_write().is_none(),
+            "try_write should not succeed while read_guard is in scope"
+        );
 
         drop(read_guard);
     }
