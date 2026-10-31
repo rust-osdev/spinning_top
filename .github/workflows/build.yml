@@ -63,6 +63,36 @@ jobs:
     - run: rustup component add clippy
     - run: cargo clippy --all-targets --all-features -- -D warnings
 
+  miri:
+    name: "Miri"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v7
+    # Miri needs the standard library sources (`rust-src`) to build its own sysroot.
+    - run: rustup toolchain install nightly --profile minimal --component miri,rust-src
+    # Each seed tries a different thread schedule. Pushes and pull requests use
+    # the fixed seeds 0..64, so failures are reproducible. Scheduled runs try a
+    # new random range to explore more schedules over time. Miri prints the
+    # failing seed; replay it locally with `-Zmiri-seed=<seed>` instead of
+    # `-Zmiri-many-seeds`.
+    #
+    # `-Zmiri-preemption-rate=0.5` switches threads at the end of half of all
+    # basic blocks (the default is 1%), so threads also interleave inside a
+    # single lock call.
+    - name: "Select seeds"
+      run: |
+        start=0
+        if [ "$GITHUB_EVENT_NAME" = schedule ]; then start=$SRANDOM; fi
+        flags="-Zmiri-many-seeds=$start..$((start + 64)) -Zmiri-preemption-rate=0.5"
+        # Printed up front, so the seeds are known even if the run hangs.
+        echo "MIRIFLAGS: $flags"
+        echo "MIRIFLAGS=$flags" >> "$GITHUB_ENV"
+    # Only the concurrency tests, the other tests run in the test job.
+    # `--test-threads=1` runs one test at a time, so a failure is attributed to
+    # the right test.
+    - run: cargo +nightly miri test --locked --all-features --test concurrency -- --test-threads=1
+
   check_formatting:
     name: "Check Formatting"
     runs-on: ubuntu-latest
