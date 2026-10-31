@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn frob() {
-        use rand::Rng;
+        use rand::RngExt;
 
         static R: RwSpinlock<usize> = RwSpinlock::new(0);
         const N: usize = 10;
@@ -355,9 +355,9 @@ mod tests {
         for _ in 0..N {
             let tx = tx.clone();
             thread::spawn(move || {
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 for _ in 0..M {
-                    if rng.gen_bool(1.0 / N as f64) {
+                    if rng.random_bool(1.0 / N as f64) {
                         drop(R.write());
                     } else {
                         drop(R.read());
