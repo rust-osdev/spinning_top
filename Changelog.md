@@ -4,6 +4,7 @@
 
 * [Upgrade to `lock_api` 0.5](https://github.com/rust-osdev/spinning_top/pull/31)
   * `RwSpinlock::read_recursive` and `try_read_recursive` are no longer available.
+* Raise the minimum supported Rust version (MSRV) to 1.95
 
 ## Other
 
