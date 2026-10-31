@@ -1,5 +1,9 @@
 # Unreleased
 
+## Breaking
+
+* Raise the minimum supported Rust version (MSRV) to 1.95
+
 # 0.3.1 – 2026-10-31
 
 ## Fixes
