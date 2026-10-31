@@ -162,11 +162,9 @@ unsafe impl<R: Relax> RawRwLockUpgrade for RawRwSpinlock<R> {
     }
 
     #[inline]
-    // `fetch_update` was renamed to `try_update` in Rust 1.95, keep the old name for compatibility
-    #[allow(deprecated)]
     fn try_lock_upgradable(&self) -> bool {
         self.lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |state| {
+            .try_update(Ordering::Acquire, Ordering::Relaxed, |state| {
                 (state & (EXCLUSIVE | UPGRADABLE) == 0).then_some(state | UPGRADABLE)
             })
             .is_ok()
