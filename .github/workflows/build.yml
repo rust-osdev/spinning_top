@@ -54,6 +54,15 @@ jobs:
     - name: 'Verify no_std build'
       run: cargo build --target thumbv7em-none-eabihf
 
+  clippy:
+    name: "Clippy"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v7
+    - run: rustup component add clippy
+    - run: cargo clippy --all-targets --all-features -- -D warnings
+
   check_formatting:
     name: "Check Formatting"
     runs-on: ubuntu-latest
