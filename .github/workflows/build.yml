@@ -54,6 +54,16 @@ jobs:
     - name: 'Verify no_std build'
       run: cargo build --target thumbv7em-none-eabihf
 
+  msrv:
+    name: "MSRV"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v7
+    - uses: taiki-e/install-action@cargo-hack
+    # Uses the toolchain specified by `rust-version` in Cargo.toml
+    - run: cargo hack test --rust-version --all-features
+
   check_formatting:
     name: "Check Formatting"
     runs-on: ubuntu-latest
