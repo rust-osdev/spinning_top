@@ -1,5 +1,17 @@
 # Unreleased
 
+# 0.3.1 – 2026-10-31
+
+## Fixes
+
+* [Fix race when upgrading RW lock](https://github.com/rust-osdev/spinning_top/pull/32)
+* [Fix docs.rs builds by migrating from `doc_auto_cfg` to `doc_cfg`](https://github.com/rust-osdev/spinning_top/pull/27)
+
+## Other
+
+* [Fix SPDX license expression](https://github.com/rust-osdev/spinning_top/pull/35)
+* [Add `Cargo.lock` for reproducible development and CI builds](https://github.com/rust-osdev/spinning_top/pull/29)
+
 # 0.3.0 – 2023-10-19
 
 ## Breaking
