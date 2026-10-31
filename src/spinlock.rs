@@ -21,10 +21,10 @@ use crate::relax::{Backoff, Relax, Spin};
 /// use spinning_top::RawSpinlock;
 ///
 /// let lock: RawSpinlock = RawSpinlock::INIT;
-/// assert_eq!(lock.try_lock(), true); // lock it
-/// assert_eq!(lock.try_lock(), false); // can't be locked a second time
-/// unsafe { lock.unlock(); } // unlock it
-/// assert_eq!(lock.try_lock(), true); // now it can be locked again
+/// let guard = lock.try_lock().unwrap(); // lock it
+/// assert!(lock.try_lock().is_none()); // can't be locked a second time
+/// unsafe { lock.unlock(guard); } // unlock it
+/// assert!(lock.try_lock().is_some()); // now it can be locked again
 #[derive(Debug)]
 pub struct RawSpinlock<R: Relax = Spin> {
     /// Whether the spinlock is locked.
@@ -36,11 +36,12 @@ impl<R: Relax> RawSpinlock<R> {
     // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
     // when called in a loop.
     #[inline]
-    fn try_lock_weak(&self) -> bool {
+    fn try_lock_weak(&self) -> Option<GuardSend> {
         // The Orderings are the same as try_lock, and are still correct here.
         self.locked
             .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+            .then(GuardSend::new)
     }
 }
 
@@ -51,13 +52,17 @@ unsafe impl<R: Relax> RawMutex for RawSpinlock<R> {
     };
 
     // A spinlock guard can be sent to another thread and unlocked there
-    type GuardMarker = GuardSend;
+    type Guard = GuardSend;
 
     #[inline]
-    fn lock(&self) {
+    fn lock(&self) -> Self::Guard {
         let mut relax = R::default();
 
-        while !self.try_lock_weak() {
+        loop {
+            if let Some(guard) = self.try_lock_weak() {
+                return guard;
+            }
+
             // Wait until the lock looks unlocked before retrying
             // Code from https://github.com/mvdnes/spin-rs/commit/d3e60d19adbde8c8e9d3199c7c51e51ee5a20bf6
             while self.is_locked() {
@@ -68,7 +73,7 @@ unsafe impl<R: Relax> RawMutex for RawSpinlock<R> {
     }
 
     #[inline]
-    fn try_lock(&self) -> bool {
+    fn try_lock(&self) -> Option<Self::Guard> {
         // Code taken from:
         // https://github.com/Amanieu/parking_lot/blob/fa294cd677936bf365afa0497039953b10c722f5/lock_api/src/lib.rs#L49-L53
         //
@@ -81,10 +86,11 @@ unsafe impl<R: Relax> RawMutex for RawSpinlock<R> {
         self.locked
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+            .then(Self::Guard::new)
     }
 
     #[inline]
-    unsafe fn unlock(&self) {
+    unsafe fn unlock(&self, _guard: Self::Guard) {
         self.locked.store(false, Ordering::Release);
     }
 
