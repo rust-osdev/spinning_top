@@ -27,7 +27,7 @@ jobs:
 
     steps:
     - name: "Checkout Repository"
-      uses: actions/checkout@v1
+      uses: actions/checkout@v7
 
     - name: "Print Rust Version"
       run: |
@@ -68,6 +68,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v7
     - run: rustup toolchain install nightly --profile minimal --component rustfmt
     - run: cargo +nightly fmt -- --check
