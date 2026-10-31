@@ -1,5 +1,15 @@
 # Unreleased
 
+## Breaking
+
+* [Upgrade to `lock_api` 0.5](https://github.com/rust-osdev/spinning_top/pull/31)
+  * `RwSpinlock::read_recursive` and `try_read_recursive` are no longer available.
+
+## Other
+
+* [Upgrade to Rust 2024](https://github.com/rust-osdev/spinning_top/pull/34)
+* [Upgrade `rand` dev-dependency to 0.10](https://github.com/rust-osdev/spinning_top/pull/33)
+
 # 0.3.1 – 2026-10-31
 
 ## Fixes
