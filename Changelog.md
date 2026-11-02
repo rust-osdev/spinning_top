@@ -1,10 +1,14 @@
 # Unreleased
 
+# 0.4.0 – 2026-11-02
+
 ## Breaking
 
 * [Upgrade to `lock_api` 0.5](https://github.com/rust-osdev/spinning_top/pull/31)
   * `RwSpinlock::read_recursive` and `try_read_recursive` are no longer available.
-* Raise the minimum supported Rust version (MSRV) to 1.95
+* [Raise the minimum supported Rust version (MSRV) to 1.95](https://github.com/rust-osdev/spinning_top/pull/38)
+* [Remove the `owning_ref` feature](https://github.com/rust-osdev/spinning_top/pull/41)
+  * `owning_ref` is unmaintained and unsound ([RUSTSEC-2022-0040](https://rustsec.org/advisories/RUSTSEC-2022-0040)). Enable `lock_api/owning_ref` directly if you still need it.
 
 ## Other
 
